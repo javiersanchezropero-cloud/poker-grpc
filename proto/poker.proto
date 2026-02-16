@@ -1,0 +1,104 @@
+syntax = "proto3";
+
+package poker.v1;
+
+option go_package = "poker-grpc/gen/poker/v1;pokerv1";
+
+// --------------------
+// Core types
+// --------------------
+message Card {
+  // Two-character format, e.g. "HA", "S7", "CT"
+  string code = 1;
+}
+
+enum HandCategory {
+  HAND_CATEGORY_UNSPECIFIED = 0;
+  HIGH_CARD = 1;
+  ONE_PAIR = 2;
+  TWO_PAIR = 3;
+  THREE_OF_A_KIND = 4;
+  STRAIGHT = 5;
+  FLUSH = 6;
+  FULL_HOUSE = 7;
+  FOUR_OF_A_KIND = 8;
+  STRAIGHT_FLUSH = 9;
+}
+
+message BestHand {
+  // The best 5-card hand (exactly 5 cards).
+  repeated Card cards = 1;
+
+  // Category of that 5-card hand.
+  HandCategory category = 2;
+
+  // Tie-break vector (highest importance first). Example: for pair -> [pairRank, kicker1, kicker2, kicker3]
+  // Ranks are encoded as: 2..14 where A=14
+  repeated int32 rank_vector = 3;
+}
+
+message EvaluateRequest {
+  // Exactly 2 cards
+  repeated Card hole = 1;
+
+  // Exactly 5 cards
+  repeated Card community = 2;
+}
+
+message EvaluateResponse {
+  BestHand best = 1;
+}
+
+// --------------------
+// Comparison
+// --------------------
+message CompareRequest {
+  // Player A
+  repeated Card hole_a = 1;
+  repeated Card community_a = 2;
+
+  // Player B
+  repeated Card hole_b = 3;
+  repeated Card community_b = 4;
+}
+
+enum CompareResult {
+  COMPARE_RESULT_UNSPECIFIED = 0;
+  A_WINS = 1;
+  B_WINS = 2;
+  TIE = 3;
+}
+
+message CompareResponse {
+  BestHand best_a = 1;
+  BestHand best_b = 2;
+  CompareResult result = 3;
+}
+
+// --------------------
+// Monte Carlo probability
+// --------------------
+message ProbabilityRequest {
+  // Your 2 hole cards (exactly 2)
+  repeated Card hero_hole = 1;
+
+  // Community cards: must be size 0, 3, 4, or 5
+  repeated Card community = 2;
+
+  // Total number of players at the table (including hero). Must be >= 2
+  int32 num_players = 3;
+
+  // Number of simulations to run. Must be > 0
+  int32 num_simulations = 4;
+}
+
+message ProbabilityResponse {
+  double win_probability = 1;
+  double tie_probability = 2;
+}
+
+service PokerService {
+  rpc EvaluateBestHand(EvaluateRequest) returns (EvaluateResponse);
+  rpc CompareHands(CompareRequest) returns (CompareResponse);
+  rpc WinProbabilityMonteCarlo(ProbabilityRequest) returns (ProbabilityResponse);
+}
