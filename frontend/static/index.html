@@ -1,0 +1,101 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Poker Frontend (Texas Hold’em)</title>
+  <style>
+    body { font-family: system-ui, Arial, sans-serif; margin: 24px; max-width: 900px; }
+    h1 { margin-bottom: 6px; }
+    .card { border: 1px solid #ddd; border-radius: 10px; padding: 16px; margin: 12px 0; }
+    input { width: 100%; padding: 8px; margin: 6px 0; }
+    button { padding: 10px 14px; cursor: pointer; }
+    pre { background: #111; color: #0f0; padding: 12px; border-radius: 10px; overflow: auto; }
+    .hint { color: #555; font-size: 0.95em; }
+  </style>
+</head>
+<body>
+  <h1>Texas Hold’em Poker – Frontend</h1>
+  <div class="hint">
+    Card format: <b>SuitRank</b> e.g. <code>HA</code>, <code>S7</code>, <code>CT</code>.
+    Suits: H D C S. Ranks: 2-9 T J Q K A.
+  </div>
+
+  <div class="card">
+    <h2>Probability (Monte Carlo)</h2>
+    <label>Hero hole (2 cards, space-separated):</label>
+    <input id="heroHole" value="SA SK" />
+    <label>Community (0/3/4/5 cards, space-separated):</label>
+    <input id="community" value=""/>
+    <label>Number of players:</label>
+    <input id="numPlayers" value="2" />
+    <label>Number of simulations:</label>
+    <input id="numSims" value="2000" />
+    <button onclick="callProb()">Compute</button>
+  </div>
+
+  <div class="card">
+    <h2>Compare Hands</h2>
+    <label>Community (5 cards):</label>
+    <input id="cmpCommunity" value="D6 S9 H4 S3 C2" />
+    <label>Player A hole (2 cards):</label>
+    <input id="holeA" value="SK CA" />
+    <label>Player B hole (2 cards):</label>
+    <input id="holeB" value="HA SQ" />
+    <button onclick="callCompare()">Compare</button>
+  </div>
+
+  <div class="card">
+    <h2>Evaluate Best Hand</h2>
+    <label>Hole (2 cards):</label>
+    <input id="evHole" value="S2 D3" />
+    <label>Community (5 cards):</label>
+    <input id="evCommunity" value="C4 H5 S6 SK CA" />
+    <button onclick="callEvaluate()">Evaluate</button>
+  </div>
+
+  <h2>Output</h2>
+  <pre id="out">{}</pre>
+
+<script>
+function splitCards(s) {
+  return s.trim().split(/\s+/).filter(Boolean);
+}
+function show(obj) {
+  document.getElementById("out").textContent = JSON.stringify(obj, null, 2);
+}
+
+async function callProb() {
+  const body = {
+    heroHole: splitCards(document.getElementById("heroHole").value),
+    community: splitCards(document.getElementById("community").value),
+    numPlayers: parseInt(document.getElementById("numPlayers").value, 10),
+    numSims: parseInt(document.getElementById("numSims").value, 10),
+  };
+  const r = await fetch("/api/probability", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(body) });
+  show(await r.json());
+}
+
+async function callCompare() {
+  const community = splitCards(document.getElementById("cmpCommunity").value);
+  const body = {
+    holeA: splitCards(document.getElementById("holeA").value),
+    communityA: community,
+    holeB: splitCards(document.getElementById("holeB").value),
+    communityB: community,
+  };
+  const r = await fetch("/api/compare", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(body) });
+  show(await r.json());
+}
+
+async function callEvaluate() {
+  const body = {
+    hole: splitCards(document.getElementById("evHole").value),
+    community: splitCards(document.getElementById("evCommunity").value),
+  };
+  const r = await fetch("/api/evaluate", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(body) });
+  show(await r.json());
+}
+</script>
+</body>
+</html>
